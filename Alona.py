@@ -15,32 +15,44 @@ NOME_IMMAGINE = "alona.jpg"
 
 st.set_page_config(page_title="Gestionale Alona Gyrotonica", page_icon="🧘‍♀️", layout="centered")
 
-# --- FUNZIONE SFONDO APP (CORRETTA PER TEMA SCURO) ---
+# --- FUNZIONE SFONDO APP (EFFETTO PANNELLO / GLASSMORPHISM) ---
 def imposta_sfondo(immagine):
     if os.path.exists(immagine):
         with open(immagine, "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read()).decode()
-        # Ho cambiato i valori in (0,0,0, 0.75) che crea una patina NERA al 75%, perfetta per far leggere il testo bianco!
+        
         st.markdown(
             f"""
             <style>
+            /* Imposta l'immagine a tutto schermo senza patina */
             .stApp {{
-                background-image: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), url(data:image/jpeg;base64,{encoded_string});
+                background-image: url(data:image/jpeg;base64,{encoded_string});
                 background-size: cover;
                 background-position: center;
                 background-attachment: fixed;
             }}
-            /* Assicura che i testi principali rimangano ben leggibili */
+            /* Rende trasparente la barra in alto */
+            .stApp > header {{
+                background-color: transparent !important;
+            }}
+            /* Crea il "pannello" elegante scuro al centro dove c'è l'app */
+            .block-container {{
+                background-color: rgba(25, 25, 25, 0.90) !important; /* Grigio molto scuro quasi opaco */
+                padding: 2rem 3rem !important;
+                border-radius: 20px;
+                box-shadow: 0px 10px 30px rgba(0,0,0,0.5);
+                margin-top: 3rem;
+                margin-bottom: 3rem;
+            }}
+            /* Assicura che i testi siano bianchi per risaltare sul pannello */
             h1, h2, h3, p, label {{
                 color: #ffffff !important;
-                text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
             }}
             </style>
             """,
             unsafe_allow_html=True
         )
 
-# Attiviamo lo sfondo
 imposta_sfondo(NOME_IMMAGINE)
 
 FILE_CLIENTI = "clienti.json"
@@ -76,12 +88,10 @@ def registra_documento(doc_record):
         docs.append(doc_record)
         salva_documenti(docs)
 
-# --- CLASSE PDF CON FILIGRANA ---
+# --- CLASSE PDF (PULITA, SENZA FILIGRANA) ---
 class PDF(FPDF):
     def header(self):
-        if os.path.exists(NOME_IMMAGINE):
-            self.image(NOME_IMMAGINE, x=30, y=80, w=150)
-            
+        # L'immagine è stata tolta! Ora c'è solo l'intestazione pulita
         self.set_font("helvetica", "B", 20)
         self.set_text_color(41, 128, 185) 
         self.cell(0, 10, NOME_STUDIO.upper(), align="C", new_x="LMARGIN", new_y="NEXT")
