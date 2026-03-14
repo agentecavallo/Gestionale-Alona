@@ -1,22 +1,47 @@
 import streamlit as st
 import json
 import os
+import base64
 from fpdf import FPDF
 from datetime import date
 
 # ==========================================
 # ⚙️ IMPOSTAZIONI STUDIO DI ALONA
 # ==========================================
-NOME_STUDIO = "Studio Gyrotonic - Alona"
+NOME_STUDIO = "Alona Gyrotonica"
 INDIRIZZO_STUDIO = "Via dei Castelli Romani 16, 00079 Rocca Priora (RM)"
 PIVA_ALONA = "P.IVA: 01234567890 | CF: LNA..."
+NOME_IMMAGINE = "alona.jpg" # Il file deve essere nella stessa cartella
 
-st.set_page_config(page_title="Gestionale Gyrotonic Alona", page_icon="🧘‍♀️", layout="centered")
+st.set_page_config(page_title="Gestionale Alona Gyrotonica", page_icon="🧘‍♀️", layout="centered")
+
+# --- FUNZIONE SFONDO APP (FILIGRANA STREAMLIT) ---
+def imposta_sfondo(immagine):
+    if os.path.exists(immagine):
+        with open(immagine, "rb") as image_file:
+            encoded_string = base64.b64encode(image_file.read()).decode()
+        # Inseriamo del CSS personalizzato per mettere lo sfondo con un velo bianco sopra (0.85 = 85% bianco)
+        st.markdown(
+            f"""
+            <style>
+            .stApp {{
+                background-image: linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url(data:image/jpeg;base64,{encoded_string});
+                background-size: cover;
+                background-position: center;
+                background-attachment: fixed;
+            }}
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
+# Attiviamo subito lo sfondo
+imposta_sfondo(NOME_IMMAGINE)
 
 FILE_CLIENTI = "clienti.json"
 FILE_DOCUMENTI = "documenti.json"
 
-# --- FUNZIONI PER L'ARCHIVIO CLIENTI ---
+# --- FUNZIONI PER L'ARCHIVIO ---
 def carica_clienti():
     if os.path.exists(FILE_CLIENTI):
         with open(FILE_CLIENTI, "r", encoding="utf-8") as file:
@@ -27,7 +52,6 @@ def salva_clienti(dati):
     with open(FILE_CLIENTI, "w", encoding="utf-8") as file:
         json.dump(dati, file, indent=4)
 
-# --- FUNZIONI PER L'ARCHIVIO DOCUMENTI ---
 def carica_documenti():
     if os.path.exists(FILE_DOCUMENTI):
         with open(FILE_DOCUMENTI, "r", encoding="utf-8") as file:
@@ -47,9 +71,15 @@ def registra_documento(doc_record):
         docs.append(doc_record)
         salva_documenti(docs)
 
-# --- CLASSE PDF PERSONALIZZATA ---
+# --- CLASSE PDF CON FILIGRANA ---
 class PDF(FPDF):
     def header(self):
+        # 1. INSERISCE LA FILIGRANA SE L'IMMAGINE ESISTE
+        if os.path.exists(NOME_IMMAGINE):
+            # Posizionata al centro della pagina (x=30, y=80) con larghezza 150mm
+            self.image(NOME_IMMAGINE, x=30, y=80, w=150)
+            
+        # 2. DISEGNA L'INTESTAZIONE SOPRA L'IMMAGINE
         self.set_font("helvetica", "B", 20)
         self.set_text_color(41, 128, 185) 
         self.cell(0, 10, NOME_STUDIO.upper(), align="C", new_x="LMARGIN", new_y="NEXT")
@@ -75,10 +105,10 @@ class PDF(FPDF):
         self.multi_cell(0, 4, note_legali, align="C")
 
 # --- INTERFACCIA APP ---
-st.title("🧘‍♀️ Studio Gyrotonic - Alona")
+st.title("🧘‍♀️ Alona Gyrotonica")
 st.write("Gestione Clienti, Fatture e Ricevute (Regime Forfettario)")
 
-tab_clienti, tab_documenti, tab_archivio_doc = st.tabs(["👤 1. Clienti", "📄 2. Emetti Doc", "🗂️ 3. Storico Documenti"])
+tab_clienti, tab_documenti, tab_archivio_doc = st.tabs(["👤 1. Clienti", "📄 2. Emetti Doc", "🗂️ 3. Storico"])
 
 # ==========================================
 # SCHEDA 1: ARCHIVIO E INSERIMENTO CLIENTI
@@ -118,7 +148,7 @@ with tab_clienti:
                 archivio_clienti[tipo_cliente][nome] = nuovo_cliente
                 salva_clienti(archivio_clienti)
                 st.success(f"✅ Cliente '{nome}' salvato con successo!")
-                st.rerun() # Aggiorna la pagina per far comparire il cliente nel menu a tendina
+                st.rerun() 
             else:
                 st.error("⚠️ Il Nome è obbligatorio.")
 
@@ -136,7 +166,7 @@ with tab_clienti:
                     del archivio_clienti["Partita IVA"][cliente_da_eliminare]
                 salva_clienti(archivio_clienti)
                 st.warning(f"Cliente '{cliente_da_eliminare}' eliminato con successo dall'archivio.")
-                st.rerun() # Aggiorna l'interfaccia istantaneamente
+                st.rerun() 
     else:
         st.info("Non ci sono clienti nell'archivio da eliminare.")
 
@@ -191,6 +221,7 @@ with tab_documenti:
                 pdf.cell(0, 6, f"Data emissione: {data_oggi}", align="L", new_x="LMARGIN", new_y="NEXT")
                 pdf.ln(8)
                 
+                # Aggiungiamo un leggero riempimento grigio trasparente per far leggere meglio i dati sulla filigrana
                 pdf.set_fill_color(245, 245, 245) 
                 pdf.set_font("helvetica", "B", 11)
                 pdf.cell(0, 8, " INTESTATO A:", fill=True, new_x="LMARGIN", new_y="NEXT")
@@ -217,8 +248,6 @@ with tab_documenti:
                 pdf.set_text_color(41, 128, 185) 
                 pdf.cell(0, 10, f"IMPORTO TOTALE: {prezzo:.2f} Euro", align="R", new_x="LMARGIN", new_y="NEXT")
                 pdf.set_text_color(0, 0, 0)
-                
-                # LA PARTE DEL METODO DI PAGAMENTO È STATA RIMOSSA COME RICHIESTO
                 
                 pdf_bytes = bytes(pdf.output())
                 nome_file = f"{tipo_doc_base}_{numero_scelto}_{anno_corrente}_{dati_c['nome'].replace(' ', '_')}.pdf"
@@ -254,7 +283,7 @@ with tab_archivio_doc:
     if len(docs_salvati) == 0:
         st.info("Nessun documento emesso finora.")
     else:
-        docs_salvati.reverse() # I più recenti in alto
+        docs_salvati.reverse() 
         
         tabella_da_mostrare = []
         totale_incassato = 0.0
@@ -272,21 +301,16 @@ with tab_archivio_doc:
         st.table(tabella_da_mostrare)
         st.success(f"**Totale emesso visualizzato:** € {totale_incassato:.2f}")
 
-        # --- SEZIONE ELIMINA DOCUMENTO ---
         st.markdown("---")
         st.subheader("🗑️ Elimina un Documento dallo Storico")
-        st.write("Attenzione: questa azione lo cancellerà dall'archivio, usa questa funzione se hai sbagliato a emettere un documento di prova.")
         
-        # Creiamo un elenco formattato per far scegliere ad Alona cosa eliminare
         opzioni_doc = [""] + [f"{d['tipo']} n. {d['numero_completo']} del {d['data']} - {d['cliente']} (€ {d['importo']:.2f})" for d in docs_salvati]
         doc_da_eliminare = st.selectbox("Seleziona il documento da annullare:", opzioni_doc)
         
         if doc_da_eliminare != "":
             if st.button("Elimina Documento", type="primary"):
-                # Ricarichiamo i documenti nel loro ordine originale (non rovesciato) per sicurezza
                 docs_originali = carica_documenti()
                 
-                # Cerchiamo l'indice del documento da cancellare usando i dati visibili nella riga
                 for i, d in enumerate(docs_originali):
                     stringa_confronto = f"{d['tipo']} n. {d['numero_completo']} del {d['data']} - {d['cliente']} (€ {d['importo']:.2f})"
                     if stringa_confronto == doc_da_eliminare:
@@ -295,4 +319,4 @@ with tab_archivio_doc:
                         
                 salva_documenti(docs_originali)
                 st.warning("Documento eliminato con successo dall'archivio!")
-                st.rerun() # Ricarica per far scomparire la riga cancellata dalla tabella
+                st.rerun()
