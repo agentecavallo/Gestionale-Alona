@@ -8,8 +8,8 @@ from datetime import date
 # ⚙️ IMPOSTAZIONI STUDIO DI ALONA
 # Modifica questi dati con quelli reali di Alona
 # ==========================================
-NOME_STUDIO = "Studio Gyrotonic - Alona"
-INDIRIZZO_STUDIO = "Via Roma 1, 00100 Città (PR)"
+NOME_STUDIO = "Alona ti Gyrotonica"
+INDIRIZZO_STUDIO = "Via dei Castelli Romani 16, 00079 Rocca Priora (RM)"
 PIVA_ALONA = "P.IVA: 01234567890 | CF: LNA..."
 IBAN_ALONA = "IT00 0000 0000 0000 0000 0000 000"
 
@@ -30,32 +30,27 @@ def salva_dati(dati):
 
 archivio_clienti = carica_dati()
 
-# --- CLASSE PDF PERSONALIZZATA (Per un design elegante) ---
+# --- CLASSE PDF PERSONALIZZATA ---
 class PDF(FPDF):
     def header(self):
-        # Nome dello studio in grande
         self.set_font("helvetica", "B", 20)
         self.set_text_color(41, 128, 185) # Colore Blu/Ottanio elegante
         self.cell(0, 10, NOME_STUDIO.upper(), align="C", new_x="LMARGIN", new_y="NEXT")
         
-        # Sottotitolo con indirizzo e P.IVA di Alona
         self.set_font("helvetica", "", 10)
-        self.set_text_color(100, 100, 100) # Grigio scuro
+        self.set_text_color(100, 100, 100)
         self.cell(0, 6, f"{INDIRIZZO_STUDIO} | {PIVA_ALONA}", align="C", new_x="LMARGIN", new_y="NEXT")
         
-        # Linea colorata di separazione
         self.set_draw_color(41, 128, 185)
         self.set_line_width(0.5)
         self.line(10, 28, 200, 28)
-        self.ln(12) # Spazio dopo l'intestazione
+        self.ln(12) 
 
     def footer(self):
-        # Posiziona a 3 cm dal fondo
         self.set_y(-30)
         self.set_font("helvetica", "I", 8)
         self.set_text_color(128, 128, 128)
         
-        # Testi di legge obbligatori per il regime Forfettario
         note_legali = (
             "Operazione in franchigia da IVA ai sensi della Legge 190/2014 art. 1 commi da 54 a 89.\n"
             "Il compenso non è soggetto a ritenute d'acconto ai sensi della legge 190/2014 art. 1 comma 67.\n"
@@ -77,22 +72,23 @@ with tab_clienti:
     tipo_cliente = st.radio("Scegli la tipologia:", ["Privato", "Partita IVA"])
     
     with st.form("form_nuovo_cliente"):
-        nome = st.text_input("Nome e Cognome / Ragione Sociale *")
+        # Ho rimosso tutti gli asterischi come richiesto
+        nome = st.text_input("Nome e Cognome / Ragione Sociale")
         telefono = st.text_input("Telefono")
         email = st.text_input("Indirizzo Email")
-        indirizzo = st.text_input("Indirizzo di Residenza o Sede *")
+        indirizzo = st.text_input("Indirizzo di Residenza o Sede")
         
         col1, col2, col3 = st.columns([2, 1, 1])
-        citta = col1.text_input("Città *")
-        provincia = col2.text_input("Prov. *")
-        cap = col3.text_input("CAP *")
+        citta = col1.text_input("Città")
+        provincia = col2.text_input("Prov.")
+        cap = col3.text_input("CAP")
         
-        cf = st.text_input("Codice Fiscale *")
+        cf = st.text_input("Codice Fiscale")
         
         piva = ""
         sdi = ""
         if tipo_cliente == "Partita IVA":
-            piva = st.text_input("Partita IVA *")
+            piva = st.text_input("Partita IVA")
             sdi = st.text_input("Codice Univoco (SDI)")
             
         salva_btn = st.form_submit_button("Salva nell'Archivio", type="primary")
@@ -124,7 +120,6 @@ with tab_documenti:
         cliente_scelto = st.selectbox("Seleziona cliente:", [""] + tutti_i_nomi)
         
         if cliente_scelto != "":
-            # Identifica se è privato o partita iva
             if cliente_scelto in archivio_clienti["Privato"]:
                 dati_c = archivio_clienti["Privato"][cliente_scelto]
                 tipo_doc = "Ricevuta (Copia di Cortesia)"
@@ -134,7 +129,6 @@ with tab_documenti:
                 tipo_doc = "Fattura (Copia di Cortesia)"
                 nome_file_base = "Fattura"
             
-            # Form per i dettagli del documento
             numero_doc = st.text_input("Numero Documento (es. 1/2024)", "1/2024")
             prestazione = st.text_area("Descrizione prestazione:", placeholder="Es. Pacchetto 10 lezioni di Gyrotonic")
             prezzo = st.number_input("Importo Totale (€)", min_value=0.0, format="%.2f")
@@ -142,14 +136,10 @@ with tab_documenti:
             if prestazione == "" or prezzo == 0.0:
                 st.warning("⚠️ Inserisci la prestazione e il prezzo per abilitare il download.")
             else:
-                # --- CREAZIONE DEL PDF ELEGANTE ---
                 pdf = PDF()
                 pdf.add_page()
-                
-                # Ripristina il colore nero per i testi
                 pdf.set_text_color(0, 0, 0)
                 
-                # Intestazione Documento (es. Fattura n. 1/2024)
                 pdf.set_font("helvetica", "B", 14)
                 pdf.cell(0, 8, f"{tipo_doc} n° {numero_doc}", align="L", new_x="LMARGIN", new_y="NEXT")
                 pdf.set_font("helvetica", "", 11)
@@ -157,8 +147,7 @@ with tab_documenti:
                 pdf.cell(0, 6, f"Data emissione: {data_oggi}", align="L", new_x="LMARGIN", new_y="NEXT")
                 pdf.ln(8)
                 
-                # Box Dati Cliente
-                pdf.set_fill_color(245, 245, 245) # Grigio chiarissimo per lo sfondo
+                pdf.set_fill_color(245, 245, 245) 
                 pdf.set_font("helvetica", "B", 11)
                 pdf.cell(0, 8, " INTESTATO A:", fill=True, new_x="LMARGIN", new_y="NEXT")
                 
@@ -174,20 +163,19 @@ with tab_documenti:
                 
                 pdf.ln(10)
                 
-                # Box Dettagli Prestazione
                 pdf.set_font("helvetica", "B", 11)
                 pdf.cell(0, 8, " DESCRIZIONE DELLA PRESTAZIONE:", fill=True, new_x="LMARGIN", new_y="NEXT")
                 pdf.set_font("helvetica", "", 11)
                 pdf.multi_cell(0, 6, f" {prestazione}") 
                 pdf.ln(10)
                 
-                # Box Importo Totale (Allineato a destra)
                 pdf.set_font("helvetica", "B", 14)
-                pdf.set_text_color(41, 128, 185) # Riprendiamo il blu
-                pdf.cell(0, 10, f"IMPORTO TOTALE: € {prezzo:.2f}", align="R", new_x="LMARGIN", new_y="NEXT")
+                pdf.set_text_color(41, 128, 185) 
+                
+                # --- ECCO LA CORREZIONE: ho tolto il simbolo € e scritto "Euro" ---
+                pdf.cell(0, 10, f"IMPORTO TOTALE: {prezzo:.2f} Euro", align="R", new_x="LMARGIN", new_y="NEXT")
                 pdf.set_text_color(0, 0, 0)
                 
-                # Informazioni per il pagamento
                 pdf.ln(15)
                 pdf.set_font("helvetica", "B", 10)
                 pdf.cell(0, 6, "Metodo di pagamento:", new_x="LMARGIN", new_y="NEXT")
@@ -195,13 +183,13 @@ with tab_documenti:
                 pdf.cell(0, 6, f"Bonifico Bancario intestato a: {dati_c.get('nome', 'Alona')}", new_x="LMARGIN", new_y="NEXT")
                 pdf.cell(0, 6, f"IBAN: {IBAN_ALONA}", new_x="LMARGIN", new_y="NEXT")
                 
-                # Output finale per Streamlit
-                pdf_bytes = pdf.output()
+                # Sicurezza extra per la trasformazione in bytes per Streamlit
+                pdf_bytes = bytes(pdf.output())
                 nome_file = f"{nome_file_base}_{dati_c['nome'].replace(' ', '_')}.pdf"
                 
                 st.download_button(
-                    label=f"⬇️ Genera e Scarica PDF",
-                    data=bytes(pdf_bytes), 
+                    label="⬇️ Genera e Scarica PDF",
+                    data=pdf_bytes, 
                     file_name=nome_file,
                     mime="application/pdf",
                     type="primary"
