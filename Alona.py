@@ -8,9 +8,8 @@ from datetime import date
 # ⚙️ IMPOSTAZIONI STUDIO DI ALONA
 # ==========================================
 NOME_STUDIO = "Studio Gyrotonic - Alona"
-INDIRIZZO_STUDIO = "Via Roma 1, 00100 Città (PR)"
+INDIRIZZO_STUDIO = "Via dei Castelli Romani 16, 00079 Rocca Priora (RM)"
 PIVA_ALONA = "P.IVA: 01234567890 | CF: LNA..."
-IBAN_ALONA = "IT00 0000 0000 0000 0000 0000 000"
 
 st.set_page_config(page_title="Gestionale Gyrotonic Alona", page_icon="🧘‍♀️", layout="centered")
 
@@ -41,10 +40,8 @@ def salva_documenti(dati):
 
 archivio_clienti = carica_clienti()
 
-# Callback per registrare il documento al momento del download
 def registra_documento(doc_record):
     docs = carica_documenti()
-    # Evita di salvare duplicati se clicca due volte lo stesso download
     gia_presente = any(d['numero'] == doc_record['numero'] and d['anno'] == doc_record['anno'] for d in docs)
     if not gia_presente:
         docs.append(doc_record)
@@ -121,8 +118,28 @@ with tab_clienti:
                 archivio_clienti[tipo_cliente][nome] = nuovo_cliente
                 salva_clienti(archivio_clienti)
                 st.success(f"✅ Cliente '{nome}' salvato con successo!")
+                st.rerun() # Aggiorna la pagina per far comparire il cliente nel menu a tendina
             else:
                 st.error("⚠️ Il Nome è obbligatorio.")
+
+    st.markdown("---")
+    st.subheader("🗑️ Elimina Cliente Esistente")
+    tutti_i_nomi_del = list(archivio_clienti["Privato"].keys()) + list(archivio_clienti["Partita IVA"].keys())
+    
+    if len(tutti_i_nomi_del) > 0:
+        cliente_da_eliminare = st.selectbox("Seleziona il cliente da rimuovere:", [""] + tutti_i_nomi_del)
+        if cliente_da_eliminare != "":
+            if st.button(f"Elimina {cliente_da_eliminare}", type="primary"):
+                if cliente_da_eliminare in archivio_clienti["Privato"]:
+                    del archivio_clienti["Privato"][cliente_da_eliminare]
+                else:
+                    del archivio_clienti["Partita IVA"][cliente_da_eliminare]
+                salva_clienti(archivio_clienti)
+                st.warning(f"Cliente '{cliente_da_eliminare}' eliminato con successo dall'archivio.")
+                st.rerun() # Aggiorna l'interfaccia istantaneamente
+    else:
+        st.info("Non ci sono clienti nell'archivio da eliminare.")
+
 
 # ==========================================
 # SCHEDA 2: EMISSIONE DOCUMENTO
@@ -146,10 +163,8 @@ with tab_documenti:
                 tipo_doc_stampa = "Fattura (Copia di Cortesia)"
                 tipo_doc_base = "Fattura"
             
-            # Calcolo automatico Anno e Numero
             anno_corrente = date.today().year
             docs_attuali = carica_documenti()
-            # Trova il numero più alto per l'anno in corso
             numeri_anno = [d['numero'] for d in docs_attuali if d['anno'] == anno_corrente]
             prossimo_numero = max(numeri_anno) + 1 if numeri_anno else 1
             
@@ -166,7 +181,6 @@ with tab_documenti:
             else:
                 data_oggi = date.today().strftime('%d/%m/%Y')
 
-                # Preparazione PDF
                 pdf = PDF()
                 pdf.add_page()
                 pdf.set_text_color(0, 0, 0)
@@ -204,17 +218,11 @@ with tab_documenti:
                 pdf.cell(0, 10, f"IMPORTO TOTALE: {prezzo:.2f} Euro", align="R", new_x="LMARGIN", new_y="NEXT")
                 pdf.set_text_color(0, 0, 0)
                 
-                pdf.ln(15)
-                pdf.set_font("helvetica", "B", 10)
-                pdf.cell(0, 6, "Metodo di pagamento:", new_x="LMARGIN", new_y="NEXT")
-                pdf.set_font("helvetica", "", 10)
-                pdf.cell(0, 6, f"Bonifico Bancario intestato a: {dati_c.get('nome', 'Alona')}", new_x="LMARGIN", new_y="NEXT")
-                pdf.cell(0, 6, f"IBAN: {IBAN_ALONA}", new_x="LMARGIN", new_y="NEXT")
+                # LA PARTE DEL METODO DI PAGAMENTO È STATA RIMOSSA COME RICHIESTO
                 
                 pdf_bytes = bytes(pdf.output())
                 nome_file = f"{tipo_doc_base}_{numero_scelto}_{anno_corrente}_{dati_c['nome'].replace(' ', '_')}.pdf"
                 
-                # Dati da salvare nell'archivio al click del bottone
                 doc_record = {
                     "numero": numero_scelto,
                     "anno": anno_corrente,
@@ -244,12 +252,10 @@ with tab_archivio_doc:
     docs_salvati = carica_documenti()
     
     if len(docs_salvati) == 0:
-        st.info("Nessun documento emesso finora. Genera un PDF per iniziare a popolare l'archivio.")
+        st.info("Nessun documento emesso finora.")
     else:
-        # Ordiniamo i documenti in modo che i più recenti siano in alto
-        docs_salvati.reverse()
+        docs_salvati.reverse() # I più recenti in alto
         
-        # Creiamo una lista formattata per mostrare una bella tabella
         tabella_da_mostrare = []
         totale_incassato = 0.0
         
@@ -264,4 +270,29 @@ with tab_archivio_doc:
             totale_incassato += d['importo']
             
         st.table(tabella_da_mostrare)
-        st.success(f"**Totale emesso:** € {totale_incassato:.2f}")
+        st.success(f"**Totale emesso visualizzato:** € {totale_incassato:.2f}")
+
+        # --- SEZIONE ELIMINA DOCUMENTO ---
+        st.markdown("---")
+        st.subheader("🗑️ Elimina un Documento dallo Storico")
+        st.write("Attenzione: questa azione lo cancellerà dall'archivio, usa questa funzione se hai sbagliato a emettere un documento di prova.")
+        
+        # Creiamo un elenco formattato per far scegliere ad Alona cosa eliminare
+        opzioni_doc = [""] + [f"{d['tipo']} n. {d['numero_completo']} del {d['data']} - {d['cliente']} (€ {d['importo']:.2f})" for d in docs_salvati]
+        doc_da_eliminare = st.selectbox("Seleziona il documento da annullare:", opzioni_doc)
+        
+        if doc_da_eliminare != "":
+            if st.button("Elimina Documento", type="primary"):
+                # Ricarichiamo i documenti nel loro ordine originale (non rovesciato) per sicurezza
+                docs_originali = carica_documenti()
+                
+                # Cerchiamo l'indice del documento da cancellare usando i dati visibili nella riga
+                for i, d in enumerate(docs_originali):
+                    stringa_confronto = f"{d['tipo']} n. {d['numero_completo']} del {d['data']} - {d['cliente']} (€ {d['importo']:.2f})"
+                    if stringa_confronto == doc_da_eliminare:
+                        docs_originali.pop(i)
+                        break
+                        
+                salva_documenti(docs_originali)
+                st.warning("Documento eliminato con successo dall'archivio!")
+                st.rerun() # Ricarica per far scomparire la riga cancellata dalla tabella
