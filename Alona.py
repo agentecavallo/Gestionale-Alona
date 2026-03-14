@@ -11,31 +11,36 @@ from datetime import date
 NOME_STUDIO = "Alona Gyrotonica"
 INDIRIZZO_STUDIO = "Via dei Castelli Romani 16, 00079 Rocca Priora (RM)"
 PIVA_ALONA = "P.IVA: 01234567890 | CF: LNA..."
-NOME_IMMAGINE = "alona.jpg" # Il file deve essere nella stessa cartella
+NOME_IMMAGINE = "alona.jpg" 
 
 st.set_page_config(page_title="Gestionale Alona Gyrotonica", page_icon="🧘‍♀️", layout="centered")
 
-# --- FUNZIONE SFONDO APP (FILIGRANA STREAMLIT) ---
+# --- FUNZIONE SFONDO APP (CORRETTA PER TEMA SCURO) ---
 def imposta_sfondo(immagine):
     if os.path.exists(immagine):
         with open(immagine, "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read()).decode()
-        # Inseriamo del CSS personalizzato per mettere lo sfondo con un velo bianco sopra (0.85 = 85% bianco)
+        # Ho cambiato i valori in (0,0,0, 0.75) che crea una patina NERA al 75%, perfetta per far leggere il testo bianco!
         st.markdown(
             f"""
             <style>
             .stApp {{
-                background-image: linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url(data:image/jpeg;base64,{encoded_string});
+                background-image: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), url(data:image/jpeg;base64,{encoded_string});
                 background-size: cover;
                 background-position: center;
                 background-attachment: fixed;
+            }}
+            /* Assicura che i testi principali rimangano ben leggibili */
+            h1, h2, h3, p, label {{
+                color: #ffffff !important;
+                text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
             }}
             </style>
             """,
             unsafe_allow_html=True
         )
 
-# Attiviamo subito lo sfondo
+# Attiviamo lo sfondo
 imposta_sfondo(NOME_IMMAGINE)
 
 FILE_CLIENTI = "clienti.json"
@@ -74,12 +79,9 @@ def registra_documento(doc_record):
 # --- CLASSE PDF CON FILIGRANA ---
 class PDF(FPDF):
     def header(self):
-        # 1. INSERISCE LA FILIGRANA SE L'IMMAGINE ESISTE
         if os.path.exists(NOME_IMMAGINE):
-            # Posizionata al centro della pagina (x=30, y=80) con larghezza 150mm
             self.image(NOME_IMMAGINE, x=30, y=80, w=150)
             
-        # 2. DISEGNA L'INTESTAZIONE SOPRA L'IMMAGINE
         self.set_font("helvetica", "B", 20)
         self.set_text_color(41, 128, 185) 
         self.cell(0, 10, NOME_STUDIO.upper(), align="C", new_x="LMARGIN", new_y="NEXT")
@@ -170,7 +172,6 @@ with tab_clienti:
     else:
         st.info("Non ci sono clienti nell'archivio da eliminare.")
 
-
 # ==========================================
 # SCHEDA 2: EMISSIONE DOCUMENTO
 # ==========================================
@@ -221,7 +222,6 @@ with tab_documenti:
                 pdf.cell(0, 6, f"Data emissione: {data_oggi}", align="L", new_x="LMARGIN", new_y="NEXT")
                 pdf.ln(8)
                 
-                # Aggiungiamo un leggero riempimento grigio trasparente per far leggere meglio i dati sulla filigrana
                 pdf.set_fill_color(245, 245, 245) 
                 pdf.set_font("helvetica", "B", 11)
                 pdf.cell(0, 8, " INTESTATO A:", fill=True, new_x="LMARGIN", new_y="NEXT")
