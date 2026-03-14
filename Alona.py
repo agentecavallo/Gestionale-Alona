@@ -15,7 +15,7 @@ NOME_IMMAGINE = "alona.jpg"
 
 st.set_page_config(page_title="Gestionale Alona Gyrotonica", page_icon="🧘‍♀️", layout="centered")
 
-# --- FUNZIONE SFONDO APP (EFFETTO PANNELLO / GLASSMORPHISM) ---
+# --- FUNZIONE SFONDO APP (EFFETTO VETRO SATINATO PIÙ CHIARO) ---
 def imposta_sfondo(immagine):
     if os.path.exists(immagine):
         with open(immagine, "rb") as image_file:
@@ -24,7 +24,7 @@ def imposta_sfondo(immagine):
         st.markdown(
             f"""
             <style>
-            /* Imposta l'immagine a tutto schermo senza patina */
+            /* Imposta l'immagine a tutto schermo */
             .stApp {{
                 background-image: url(data:image/jpeg;base64,{encoded_string});
                 background-size: cover;
@@ -35,18 +35,21 @@ def imposta_sfondo(immagine):
             .stApp > header {{
                 background-color: transparent !important;
             }}
-            /* Crea il "pannello" elegante scuro al centro dove c'è l'app */
+            /* Crea il pannello effetto "vetro satinato" più chiaro */
             .block-container {{
-                background-color: rgba(25, 25, 25, 0.90) !important; /* Grigio molto scuro quasi opaco */
+                background-color: rgba(45, 45, 45, 0.65) !important; /* Grigio schiarito e più trasparente */
+                backdrop-filter: blur(12px); /* Magia: sfoca l'immagine dietro per far leggere il testo! */
+                -webkit-backdrop-filter: blur(12px); /* Per compatibilità con Safari */
                 padding: 2rem 3rem !important;
                 border-radius: 20px;
-                box-shadow: 0px 10px 30px rgba(0,0,0,0.5);
+                box-shadow: 0px 10px 30px rgba(0,0,0,0.4);
                 margin-top: 3rem;
                 margin-bottom: 3rem;
             }}
-            /* Assicura che i testi siano bianchi per risaltare sul pannello */
+            /* Assicura che i testi siano bianchi per risaltare */
             h1, h2, h3, p, label {{
                 color: #ffffff !important;
+                text-shadow: 1px 1px 2px rgba(0,0,0,0.5); /* Piccolissima ombra al testo per leggibilità extra */
             }}
             </style>
             """,
@@ -91,7 +94,6 @@ def registra_documento(doc_record):
 # --- CLASSE PDF (PULITA, SENZA FILIGRANA) ---
 class PDF(FPDF):
     def header(self):
-        # L'immagine è stata tolta! Ora c'è solo l'intestazione pulita
         self.set_font("helvetica", "B", 20)
         self.set_text_color(41, 128, 185) 
         self.cell(0, 10, NOME_STUDIO.upper(), align="C", new_x="LMARGIN", new_y="NEXT")
